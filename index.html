@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="css/style.css">
+<script type="text/javascript" src="paperjs/dist/paper-full.js"></script>
+<script type="text/paperscript" canvas="cvs">
+  // console.log(1);
+  function Ball(r, p, v) {
+    this.radius = r;
+    this.point = p;
+    this.vector = v;
+    this.maxVec = 15;
+    this.path = new Path.Circle({
+      center: this.point,
+      radius: this.radius,
+      fillColor: {
+        hue: Math.random() * 360,
+        saturation: 1,
+        brightness: 1
+      },
+      blendMode: 'screen'
+    });
+  }
+
+  Ball.prototype = {
+      iterate: function() {
+        this.checkBorders();
+        if (this.vector.length > this.maxVec)
+            this.vector.length = this.maxVec;
+        this.point += this.vector;
+        this.path.position = this.point;
+      },
+
+      checkBorders: function() {
+        var size = view.size;
+        if (this.point.x < this.radius)
+            this.vector.x *= -1;
+        if (this.point.x > size.width - this.radius)
+            this.vector.x *= -1;
+        if (this.point.y < this.radius)
+            this.vector.y *= -1;
+        if (this.point.y > size.height - this.radius)
+            this.vector.y *= -1;
+      }
+  };
+
+  function Particle(r, p, m) {
+    this.radius = r;
+    this.point = p;
+    this.momentum = m;
+    this.path = new Path.Circle({
+      center: this.point,
+      radius: this.radius,
+      fillColor: {
+        hue: Math.random() * 360,
+        saturation: 1,
+        brightness: 1
+      },
+      blendMode: 'screen'
+    });
+  }
+
+  function Pair(b1, b2) {
+    this.b1 = b1;
+    this.b2 = b2;
+
+    // stength of the interaction between balls
+    // positive -> attraction
+    // negaitive -> repulsion
+    var strength = 3;
+
+    var m1 = (this.b2.path.position - this.b1.path.position).normalize() * strength;
+    var m2 = (this.b1.path.position - this.b2.path.position).normalize() * strength;
+
+    this.p1 = new Particle(this.b1.radius / 4, this.b1.path.position, m1);
+    this.p2 = new Particle(this.b2.radius / 4, this.b2.path.position, m2);
+    // this.lnk = new Path.Line({
+    //   from: this.b1.path.position,
+    //   to: this.b2.path.position,
+    //   // selected: true,
+    //   strokeColor: 'white'
+    // });
+  }
+
+  Pair.prototype = {
+    iterate: function () {
+      // vector 1 is going from particle 1 to ball 2
+      var v1 = this.b2.path.position - this.p1.path.position;
+      // vector 2 is going from particle 2 to ball 1
+      var v2 = this.b1.path.position - this.p2.path.position;
+
+      var particleVelosity = 20;
+      // update particles positions
+      // console.log(v1.normalize() * particleVelosity);
+      console.log(this.p1);
+      this.p1.path.position += v1.normalize() * particleVelosity;
+      this.p2.path.position += v2.normalize() * particleVelosity;
+
+      // if particle 1 reached its destinition
+      if (v1.length < this.b2.radius) {
+        // change ball's momentum
+        this.b2.vector += this.p1.momentum;
+        // move partice back to start
+        this.p1.path.position = this.b1.path.position;
+      };
+
+      // if particle 2 reached its destinition
+      if (v2.length < this.b1.radius) {
+        this.b1.vector += this.p2.momentum;
+        this.p2.path.position = this.b2.path.position;
+      };
+
+      // update interaction line
+      // this.lnk.segments[0].point = this.b1.path.position;
+      // this.lnk.segments[1].point = this.b2.path.position;
+    }
+  };
+
+  //--------------------- main ---------------------
+
+  var balls = [];
+  var numBalls = 3;
+  for (var i = 0; i < numBalls; i++) {
+    var radius = 30;
+    var position = Point.random() * (view.size - [2*radius, 2*radius]) + [radius, radius];
+    var vector = new Point({
+        angle: 360 * Math.random(),
+        length: Math.random() * 4
+    });
+    balls.push(new Ball(radius, position, vector));
+  }
+
+  var pairs = [];
+  for (var i = 0; i <= balls.length; i++) {
+    for (var j = i+1; j < balls.length; j++) {
+      pairs.push(new Pair(balls[i], balls[j]))
+    };
+  };
+
+  function onFrame() {
+    for (var i = 0; i < pairs.length; i++) {
+      pairs[i].iterate();
+    };
+    for (var i = 0, l = balls.length; i < l; i++) {
+      balls[i].iterate();
+    }
+  }
+</script>
+</head>
+<body>
+  <canvas id="cvs" resize hidpi="off" style="background:black"></canvas>
+</body>
+</html>
