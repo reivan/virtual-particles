@@ -4,6 +4,25 @@
 <meta charset="utf-8">
 <link rel="stylesheet" href="css/style.css">
 <script type="text/javascript" src="paperjs/dist/paper-full.js"></script>
+<script type="text/javascript">
+  window.onload = function () {
+    document
+      .querySelector('#strength-input')
+      .addEventListener('input', function () {
+        params.strength = +this.value;
+      });
+    document
+      .querySelector('#number-of-balls')
+      .addEventListener('input', function () {
+        params.strength = +this.value;
+      });
+    document
+      .querySelector('#particle-velosity')
+      .addEventListener('input', function () {
+        params.particleVelosity = +this.value;
+      });
+  }
+</script>
 <script type="text/paperscript" canvas="cvs">
   // console.log(1);
   function Ball(r, p, v, c) {
@@ -104,12 +123,11 @@
     strength: 1,
     particleVelosity: 20,
     numBalls: 3,
-    percentPositive: 0.1
+    percentPositive: 0.1,
+    balls: []
   }
 
-
-  var balls = [];
-  for (var i = 0; i < params.numBalls; i++) {
+  function addBall() {
     var radius = 30;
     var position = Point.random() * (view.size - [2*radius, 2*radius]) + [radius, radius];
     var vector = new Point({
@@ -123,14 +141,22 @@
         return -1;
       }
     })();
-    balls.push(new Ball(radius, position, vector, charge));
+    params.balls.push(new Ball(radius, position, vector, charge));
   }
-  console.log(balls);
+
+  function removeBall() {
+    params.balls.unshift();
+  }
+
+  for (var i = 0; i < params.numBalls; i++) {
+    addBall();
+  }
+  // console.log(balls);
 
   var pairs = [];
-  for (var i = 0; i <= balls.length; i++) {
-    for (var j = i+1; j < balls.length; j++) {
-      pairs.push(new Pair(balls[i], balls[j]))
+  for (var i = 0; i <= params.balls.length; i++) {
+    for (var j = i+1; j < params.balls.length; j++) {
+      pairs.push(new Pair(params.balls[i], params.balls[j]))
     };
   };
 
@@ -138,8 +164,8 @@
     for (var i = 0; i < pairs.length; i++) {
       pairs[i].iterate();
     };
-    for (var i = 0, l = balls.length; i < l; i++) {
-      balls[i].iterate();
+    for (var i = 0, l = params.balls.length; i < l; i++) {
+      params.balls[i].iterate();
     }
   }
 </script>
@@ -147,16 +173,16 @@
 <body>
   <div class="params">
     <label>Number of balls</label><br>
-    <input type="range">
+    <input id="number-of-balls" type="range" min="1" max="15" value="3">
     <br>
     <label>Intaraction strength</label><br>
-    <input type="range">
+    <input id="strength-input" type="range" min="-5" max="5" value="1">
     <br>
     <label>Percent of positivly charged balls</label><br>
     <input type="range">
     <br>
     <label>Interaction particle velosity</label><br>
-    <input type="range">
+    <input id="particle-velosity" type="range" min="1" max="40" value="20">
     <br>
     <!-- <label>Intaraction strength</label>
     <input type="range"> -->
