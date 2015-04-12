@@ -2,29 +2,37 @@
 <html>
 <head>
 <meta charset="utf-8">
-<link rel="stylesheet" href="css/style.css">
-<script type="text/javascript" src="paperjs/dist/paper-full.js"></script>
+<link rel="stylesheet" href="style.css">
+<script type="text/javascript" src="paper-full.js"></script>
 <script type="text/javascript">
   window.onload = function () {
+    var ballsInput = document.querySelector('#number-of-balls');
     document
-      .querySelector('#number-of-balls')
-      .addEventListener('input', function () {
-        params.strength = +this.value;
+      .querySelector('#number-of-balls-minus')
+      .addEventListener('click', function () {
+        params.removeBall();
+        ballsInput.value = params.balls.length;
       });
+    document
+      .querySelector('#number-of-balls-plus')
+      .addEventListener('click', function () {
+        params.addBall(true);
+        ballsInput.value = params.balls.length;
+      });
+
     document
       .querySelector('#strength-input')
       .addEventListener('input', function () {
         params.strength = +this.value;
       });
     document
-      .querySelector('#particle-velosity')
+      .querySelector('#particle-velocity')
       .addEventListener('input', function () {
         params.particleVelosity = +this.value;
       });
   }
 </script>
 <script type="text/paperscript" canvas="cvs">
-  // console.log(1);
   function Ball(r, p, v) {
     this.radius = r;
     this.point = p;
@@ -125,10 +133,14 @@
     percentPositive: 0.1,
     maxBallVelosity: 6,
     ballsRadius: 30,
-    balls: []
+    balls: [],
+    pairs: []
   }
 
-  function addBall() {
+  window.params.addBall = function (recalc) {
+    if (params.balls.length >= 15) {
+      return;
+    }
     var radius = params.ballsRadius;
     var position = Point.random() * (view.size - [2*radius, 2*radius]) + [radius, radius];
     var vector = new Point({
@@ -136,26 +148,43 @@
         length: Math.random() * params.maxBallVelosity
     });
     params.balls.push(new Ball(radius, position, vector));
+    
+    if (recalc) {
+      params.recalcPairs()
+    };
   }
 
-  function removeBall() {
-    params.balls.unshift();
+  window.params.removeBall = function () {
+    if (params.balls.length <= 1) {
+      return;
+    }
+    var ball = params.balls.pop();
+    ball.path.remove();
+    params.recalcPairs();
   }
 
   for (var i = 0; i < params.numBalls; i++) {
-    addBall();
+    params.addBall(false);
   }
 
-  var pairs = [];
-  for (var i = 0; i <= params.balls.length; i++) {
-    for (var j = i+1; j < params.balls.length; j++) {
-      pairs.push(new Pair(params.balls[i], params.balls[j]))
+  window.params.recalcPairs = function () {
+    for (var i = 0; i < params.pairs.length; i++) {
+      params.pairs[i].p.path.remove();
+    };
+    params.pairs = [];
+
+    for (var i = 0; i <= params.balls.length; i++) {
+      for (var j = i+1; j < params.balls.length; j++) {
+        params.pairs.push(new Pair(params.balls[i], params.balls[j]));
+      };
     };
   };
 
+  params.recalcPairs();
+
   function onFrame() {
-    for (var i = 0; i < pairs.length; i++) {
-      pairs[i].iterate();
+    for (var i = 0; i < params.pairs.length; i++) {
+      params.pairs[i].iterate();
     };
     for (var i = 0, l = params.balls.length; i < l; i++) {
       params.balls[i].iterate();
@@ -164,17 +193,31 @@
 </script>
 </head>
 <body>
-  <div class="params">
-    <label>Number of balls</label><br>
-    <input id="number-of-balls" type="number" min="1" max="15" value="3">
-    <br>
-    <label>Intaraction strength</label><br>
-    <input id="strength-input" type="range" min="-5" max="5" value="-1">
-    <br>
-    <label>Interaction particle velosity</label><br>
-    <input id="particle-velosity" type="range" min="1" max="40" value="20">
-    <br>
+  <div class="container">
+    <canvas id="cvs" hidpi="off" style="background:black"></canvas>
+    <div class="params">
+      <label>Number of balls</label><br>
+      <input id="number-of-balls-minus" type="button" value="-1">
+      <input id="number-of-balls" disabled type="text" min="1" max="15" value="3">
+      <input id="number-of-balls-plus" type="button" value="+1">
+      <br>
+      <label>Intaraction strength</label><br>
+      <input id="strength-input" type="range" min="-3" max="3" value="-1" step="0.3">
+      <br>
+      <label>Interaction particle velocity</label><br>
+      <input id="particle-velocity" type="range" min="1" max="40" value="20">
+      <br>
+    </div>
   </div>
-  <canvas id="cvs" resize hidpi="off" style="background:black"></canvas>
+  <div class="description">
+    <p>This animation is loosely based on the virtual particle mechanism. In some scene repulsion of two electrons could be thought of as if they were exchanging virtual photons which carry momentum. You can read more about virtual particles on <a href="https://en.wikipedia.org/wiki/Virtual_particle">Wikipedia</a> or <a href="http://math.ucr.edu/home/baez/physics/Quantum/virtual_particles.html">Phisics FAQ</a>.</p>
+
+    <p>Things used:</p>
+    <ul>
+      <li><a href="http://paperjs.org/">Paper.js</a>.</li>
+      <li><a href="http://lea.verou.me/css3patterns/">CSS3 Patterns</a>.</li>
+    </ul>
+    <p>Source code can be viewed on <a href="sdf">GitHub</a>.</p>
+  </div>
 </body>
 </html>
