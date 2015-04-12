@@ -1,4 +1,4 @@
-![Virtual particles gif animation](https://38.media.tumblr.com/01c1498f15ab53d6811e870f75161f23/tumblr_nmj5uviDjq1urildbo2_r1_400.gif "Virtual particles")
+![Virtual particles gif animation](http://i.imgur.com/KLCDOks.gif "Virtual particles")
 
 [reivan.me/virtual-particles/index.html](http://reivan.me/virtual-particles/index.html)
 
