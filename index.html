@@ -7,12 +7,12 @@
 <script type="text/javascript">
   window.onload = function () {
     document
-      .querySelector('#strength-input')
+      .querySelector('#number-of-balls')
       .addEventListener('input', function () {
         params.strength = +this.value;
       });
     document
-      .querySelector('#number-of-balls')
+      .querySelector('#strength-input')
       .addEventListener('input', function () {
         params.strength = +this.value;
       });
@@ -25,12 +25,11 @@
 </script>
 <script type="text/paperscript" canvas="cvs">
   // console.log(1);
-  function Ball(r, p, v, c) {
+  function Ball(r, p, v) {
     this.radius = r;
     this.point = p;
     this.vector = v;
-    this.charge = c;
-    this.maxVec = 6;
+    this.maxVec = params.maxBallVelosity;
     this.path = new Path.Circle({
       center: this.point,
       radius: this.radius,
@@ -87,7 +86,7 @@
     this.b2 = b2;
 
     // momentum
-    var m = (this.b2.path.position - this.b1.path.position).normalize() * params.strength * this.b1.charge;
+    var m = (this.b2.path.position - this.b1.path.position).normalize() * params.strength;
     this.p = new Particle(this.b1.radius / 4, this.b1.path.position, m);
   }
 
@@ -105,7 +104,7 @@
         // add momentum to reciver
         this.b2.vector += this.p.momentum;
 
-        this.p.momentum = (this.b2.path.position - this.b1.path.position).normalize() * params.strength * this.b1.charge;
+        this.p.momentum = (this.b2.path.position - this.b1.path.position).normalize() * params.strength ;
         // subtruct momentum form emitter
         this.b1.vector -= this.p.momentum;
         // move partice back to start
@@ -120,28 +119,23 @@
     // stength of the interaction between balls
     // positive -> repulsion
     // negaitive -> attraction
-    strength: 1,
+    strength: -1,
     particleVelosity: 20,
     numBalls: 3,
     percentPositive: 0.1,
+    maxBallVelosity: 6,
+    ballsRadius: 30,
     balls: []
   }
 
   function addBall() {
-    var radius = 30;
+    var radius = params.ballsRadius;
     var position = Point.random() * (view.size - [2*radius, 2*radius]) + [radius, radius];
     var vector = new Point({
         angle: 360 * Math.random(),
-        length: Math.random() * 8
+        length: Math.random() * params.maxBallVelosity
     });
-    var charge = (function () {
-      if ( Math.random() < params.percentPositive) {
-        return 1;
-      } else {
-        return -1;
-      }
-    })();
-    params.balls.push(new Ball(radius, position, vector, charge));
+    params.balls.push(new Ball(radius, position, vector));
   }
 
   function removeBall() {
@@ -151,7 +145,6 @@
   for (var i = 0; i < params.numBalls; i++) {
     addBall();
   }
-  // console.log(balls);
 
   var pairs = [];
   for (var i = 0; i <= params.balls.length; i++) {
@@ -173,19 +166,14 @@
 <body>
   <div class="params">
     <label>Number of balls</label><br>
-    <input id="number-of-balls" type="range" min="1" max="15" value="3">
+    <input id="number-of-balls" type="number" min="1" max="15" value="3">
     <br>
     <label>Intaraction strength</label><br>
-    <input id="strength-input" type="range" min="-5" max="5" value="1">
-    <br>
-    <label>Percent of positivly charged balls</label><br>
-    <input type="range">
+    <input id="strength-input" type="range" min="-5" max="5" value="-1">
     <br>
     <label>Interaction particle velosity</label><br>
     <input id="particle-velosity" type="range" min="1" max="40" value="20">
     <br>
-    <!-- <label>Intaraction strength</label>
-    <input type="range"> -->
   </div>
   <canvas id="cvs" resize hidpi="off" style="background:black"></canvas>
 </body>
