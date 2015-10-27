@@ -1,6 +1,6 @@
 ![Virtual particles gif animation](http://i.imgur.com/KLCDOks.gif "Virtual particles")
 
-[reivan.me/virtual-particles/index.html](http://reivan.me/virtual-particles/index.html)
+Link is down.
 
 In some scene repulsion of two electrons could be thought of as if they were exchanging virtual photons which carry momentum. You can read more about virtual particles on [Wikipedia](https://en.wikipedia.org/wiki/Virtual_particle) or [Phisics FAQ](http://math.ucr.edu/home/baez/physics/Quantum/virtual_particles.html).
 
