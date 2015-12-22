@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="style.css">
+<script type="text/javascript" src="paper-full.js"></script>
+<script type="text/javascript">
+  window.onload = function () {
+    var ballsInput = document.querySelector('#number-of-balls');
+    document
+      .querySelector('#number-of-balls-minus')
+      .addEventListener('click', function () {
+        params.removeBall();
+        ballsInput.value = params.balls.length;
+      });
+    document
+      .querySelector('#number-of-balls-plus')
+      .addEventListener('click', function () {
+        params.addBall(true);
+        ballsInput.value = params.balls.length;
+      });
+
+    document
+      .querySelector('#strength-input')
+      .addEventListener('input', function () {
+        params.strength = +this.value;
+      });
+    document
+      .querySelector('#particle-velocity')
+      .addEventListener('input', function () {
+        params.particleVelosity = +this.value;
+      });
+  }
+</script>
+<script type="text/paperscript" canvas="cvs">
+  function Ball(r, p, v) {
+    this.radius = r;
+    this.point = p;
+    this.vector = v;
+    this.maxVec = params.maxBallVelosity;
+    this.path = new Path.Circle({
+      center: this.point,
+      radius: this.radius,
+      fillColor: {
+        hue: Math.random() * 360,
+        saturation: 1,
+        brightness: 1
+      },
+      blendMode: 'screen'
+    });
+  }
+
+  Ball.prototype = {
+      iterate: function() {
+        this.checkBorders();
+        if (this.vector.length > this.maxVec)
+            this.vector.length = this.maxVec;
+        this.point += this.vector;
+        this.path.position = this.point;
+      },
+
+      checkBorders: function() {
+        var size = view.size;
+
+        if (this.point.x < this.radius && this.vector.x < 0)
+            this.vector.x *= -1;
+        if (this.point.x > size.width - this.radius && this.vector.x > 0)
+            this.vector.x *= -1;
+        if (this.point.y < this.radius && this.vector.y < 0)
+            this.vector.y *= -1;
+        if (this.point.y > size.height - this.radius && this.vector.y > 0)
+            this.vector.y *= -1;
+      }
+  };
+
+  function Particle(r, p, m) {
+    this.radius = r;
+    this.point = p;
+    this.momentum = m;
+    this.path = new Path.Circle({
+      center: this.point,
+      radius: this.radius,
+      fillColor: {
+        hue: Math.random() * 360,
+        saturation: 1,
+        brightness: 1
+      },
+      blendMode: 'screen'
+    });
+  }
+
+  function Pair(b1, b2) {
+    this.b1 = b1;
+    this.b2 = b2;
+
+    // momentum
+    var m = (this.b2.path.position - this.b1.path.position).normalize() * params.strength;
+    this.p = new Particle(this.b1.radius / 4, this.b1.path.position, m);
+  }
+
+  Pair.prototype = {
+    iterate: function () {
+      // vector 1 is going from particle 1 to ball 2
+      var v = this.b2.path.position - this.p.path.position;
+
+      // update particle position
+      this.p.path.position += v.normalize() * params.particleVelosity;
+
+      // if particle reached its destinition
+      if (v.length < this.b2.radius) {
+        // update momentum
+        // add momentum to reciver
+        this.b2.vector += this.p.momentum;
+
+        this.p.momentum = (this.b2.path.position - this.b1.path.position).normalize() * params.strength ;
+        // subtruct momentum form emitter
+        this.b1.vector -= this.p.momentum;
+        // move partice back to start
+        this.p.path.position = this.b1.path.position;
+      };
+    }
+  };
+
+  //--------------------- main ---------------------
+
+  window.params = {
+    // stength of the interaction between balls
+    // positive -> repulsion
+    // negaitive -> attraction
+    strength: -1,
+    particleVelosity: 20,
+    numBalls: 3,
+    percentPositive: 0.1,
+    maxBallVelosity: 6,
+    ballsRadius: 30,
+    balls: [],
+    pairs: []
+  }
+
+  window.params.addBall = function (recalc) {
+    if (params.balls.length >= 15) {
+      return;
+    }
+    var radius = params.ballsRadius;
+    var position = Point.random() * (view.size - [2*radius, 2*radius]) + [radius, radius];
+    var vector = new Point({
+        angle: 360 * Math.random(),
+        length: Math.random() * params.maxBallVelosity
+    });
+    params.balls.push(new Ball(radius, position, vector));
+    
+    if (recalc) {
+      params.recalcPairs()
+    };
+  }
+
+  window.params.removeBall = function () {
+    if (params.balls.length <= 1) {
+      return;
+    }
+    var ball = params.balls.pop();
+    ball.path.remove();
+    params.recalcPairs();
+  }
+
+  for (var i = 0; i < params.numBalls; i++) {
+    params.addBall(false);
+  }
+
+  window.params.recalcPairs = function () {
+    for (var i = 0; i < params.pairs.length; i++) {
+      params.pairs[i].p.path.remove();
+    };
+    params.pairs = [];
+
+    for (var i = 0; i <= params.balls.length; i++) {
+      for (var j = i+1; j < params.balls.length; j++) {
+        params.pairs.push(new Pair(params.balls[i], params.balls[j]));
+      };
+    };
+  };
+
+  params.recalcPairs();
+
+  function onFrame() {
+    for (var i = 0; i < params.pairs.length; i++) {
+      params.pairs[i].iterate();
+    };
+    for (var i = 0, l = params.balls.length; i < l; i++) {
+      params.balls[i].iterate();
+    }
+  }
+</script>
+</head>
+<body>
+  <div class="container">
+    <canvas id="cvs" hidpi="off" style="background:black"></canvas>
+    <div class="params">
+      <label>Number of balls</label><br>
+      <input id="number-of-balls-minus" type="button" value="-1">
+      <input id="number-of-balls" disabled type="text" min="1" max="15" value="3">
+      <input id="number-of-balls-plus" type="button" value="+1">
+      <br>
+      <label>Intaraction strength</label><br>
+      <input id="strength-input" type="range" min="-3" max="3" value="-1" step="0.3">
+      <br>
+      <label>Interaction particle velocity</label><br>
+      <input id="particle-velocity" type="range" min="1" max="40" value="20">
+      <br>
+    </div>
+  </div>
+  <div class="description">
+    <p>This animation is loosely based on the virtual particle mechanism. In some scene repulsion of two electrons could be thought of as if they were exchanging virtual photons which carry momentum. You can read more about virtual particles on <a href="https://en.wikipedia.org/wiki/Virtual_particle">Wikipedia</a> or <a href="http://math.ucr.edu/home/baez/physics/Quantum/virtual_particles.html">Phisics FAQ</a>.</p>
+
+    <p>Things used:</p>
+    <ul>
+      <li><a href="http://paperjs.org/">Paper.js</a>.</li>
+      <li><a href="http://lea.verou.me/css3patterns/">CSS3 Patterns</a>.</li>
+    </ul>
+    <p>Source code can be viewed on <a href="https://github.com/reivan/virtual-particles">GitHub</a>.</p>
+  </div>
+</body>
+</html>
